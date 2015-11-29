@@ -7,6 +7,7 @@
 #   $ docker run --rm --volumes-from DVC名 -v $(pwd):/backup busybox /backup/dvc_tool.sh backup tgzファイル
 #   
 #   コンテナDVCのボリュームをカレントディレクトリのtgzファイルにバックアップします
+#   合わせてリストア用のスクリプトを生成します
 #
 # restore例）
 #   docker run --rm --volumes-from DVC名 -v $(pwd):/backup busybox /backup/dvc_tool.sh restore tgzファイル
@@ -21,6 +22,7 @@
 usage() {
   echo "usage..."
   echo "$0 [backup|restore] tgz"
+  exit 1
 }
 
 detect_dvc() {
@@ -40,12 +42,31 @@ detect_dvc() {
 }
 
 create_restore_script() {
-  echo "#!/bin/sh" > $2_restore.sh
-  echo "#create dvc" >> $2_restore.sh
-  echo "docker run -v $1 --name \$1 busybox true" >> $2_restore.sh
-  echo "#restore" >> $2_restore.sh
-  echo "docker run --rm --volumes-from \$1 -v \$(pwd):/backup osuo/docker-backup restore \$2" >> $2_restore.sh
-  chmod +x $2_restore.sh
+  restore_script=${2%.*}_restore.sh
+
+  echo "create restore script ... $restore_script"
+
+  cat <<- EOS > $restore_script
+	#!/bin/sh
+
+	if [ \$# -ne 2 ]; then
+	  echo "usage..."
+	  echo "\$0 DVC TGZ"
+	  exit 1
+	fi
+
+	echo "restore..."
+
+	#create dvc
+	echo "docker run -v $1 --name \$1 busybox true"
+	docker run -v $1 --name \$1 busybox true
+
+	#restore
+	echo "docker run --rm --volumes-from \$1 -v \$(pwd):/backup osuo/docker-backup restore \$2"
+	docker run --rm --volumes-from \$1 -v \$(pwd):/backup osuo/docker-backup restore \$2
+	EOS
+
+  chmod +x $restore_script
 }
 
 ### main
@@ -53,11 +74,9 @@ create_restore_script() {
 # check
 if [ $# -ne 2 ]; then
   usage
-  exit 1
 fi
 if [ "$1" != "backup" -a "$1" != "restore" ]; then
   usage
-  exit 1
 fi
 
 # set
@@ -66,15 +85,16 @@ tgz=/backup/$2
 
 # do
 if [ "$action" = "backup" ]; then
+  echo "backup..."
   detect_dvc
-  echo "backup... $volumes"
+
+  echo "valumes = $volumes"
+  echo "file = $tgz"
   create_restore_script $volumes $tgz
 
   #tar acf $tgz $volumes #busyboxのtarは --auto-compress が使えない
   tar czf $tgz $volumes
 else
-  echo "restore... $tgz"
-
   tar xzf $tgz -C /
 fi
 
