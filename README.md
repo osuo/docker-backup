@@ -21,7 +21,7 @@ $ ./wrapper/backup.sh バックアップするDVC バックアップファイル
 ```
 カレントディレクトリにバックアップファイルとリストア用のスクリプトが生成されます。
 
-### 実行例
+### バックアップ実行例
 ```
 $ docker inspect -f "{{ .Config.Volumes }}" work-dvc
 map[/hogehoge:{}]
@@ -39,16 +39,17 @@ create restore script ... /backup/hoge_restore.sh
 バックアップファイルとリストア用スクリプトを用意します。
 それらのファイルがあるディレクトリに移動して、リストアスクリプトを実行します。
 ```
-$ ./リストアスクリプト 生成するDVC リストアするTGZ
+$ ./リストアスクリプト 生成するDVC
 ```
 
-### 実行例
+### リストア実行例
 ```
-$ docker inspect -f "{{ .Configure.Volumes }}" work-hoge
+$ docker inspect -f "{{ .Config.Volumes }}" work-hoge
 rror: No such image or container: work-hoge
 
-$ ./hoge_restore.sh work-hoge hoge.tgz
+$ ./hoge_restore.sh work-hoge
 restore...
 docker run -v /hogehoge --name work-hoge busybox true
 docker run --rm --volumes-from work-hoge -v /Users/hagi/backup:/backup osuo/docker-backup restore hoge.tgz
 ```
+
