@@ -42,6 +42,7 @@ detect_dvc() {
 }
 
 create_restore_script() {
+  restore_file=${2##*/}
   restore_script=${2%.*}_restore.sh
 
   echo "create restore script ... $restore_script"
@@ -49,9 +50,9 @@ create_restore_script() {
   cat <<- EOS > $restore_script
 	#!/bin/sh
 
-	if [ \$# -ne 2 ]; then
+	if [ \$# -ne 1 ]; then
 	  echo "usage..."
-	  echo "\$0 DVC TGZ"
+	  echo "\$0 DVC"
 	  exit 1
 	fi
 
@@ -62,8 +63,8 @@ create_restore_script() {
 	docker run -v $1 --name \$1 busybox true
 
 	#restore
-	echo "docker run --rm --volumes-from \$1 -v \$(pwd):/backup osuo/docker-backup restore \$2"
-	docker run --rm --volumes-from \$1 -v \$(pwd):/backup osuo/docker-backup restore \$2
+	echo "docker run --rm --volumes-from \$1 -v \$(pwd):/backup osuo/docker-backup restore $restore_file"
+	docker run --rm --volumes-from \$1 -v \$(pwd):/backup osuo/docker-backup restore $restore_file
 	EOS
 
   chmod +x $restore_script
