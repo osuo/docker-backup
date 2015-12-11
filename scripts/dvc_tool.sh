@@ -45,6 +45,11 @@ create_restore_script() {
   restore_file=${1##*/}
   restore_script=${1%.*}_restore.sh
 
+  shift
+  for volume in $*; do
+    vopts=$vopts" -v $volume"
+  done
+
   echo "create restore script ... $restore_script"
 
   cat <<- EOS > $restore_script
@@ -59,8 +64,8 @@ create_restore_script() {
 	echo "restore..."
 
 	#create dvc
-	echo "docker run -v $1 --name \$1 busybox true"
-	docker run -v $1 --name \$1 busybox true
+	echo "docker run $vopts --name \$1 busybox true"
+	docker run $vopts --name \$1 busybox true
 
 	#restore
 	echo "docker run --rm --volumes-from \$1 -v \$(pwd):/backup osuo/docker-backup restore $restore_file"
@@ -91,7 +96,7 @@ if [ "$action" = "backup" ]; then
 
   echo "valumes = $volumes"
   echo "file = $tgz"
-  create_restore_script $tgz
+  create_restore_script $tgz $volumes
 
   #tar acf $tgz $volumes #busyboxのtarは --auto-compress が使えない
   tar czf $tgz $volumes
