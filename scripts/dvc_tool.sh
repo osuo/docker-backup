@@ -42,8 +42,8 @@ detect_dvc() {
 }
 
 create_restore_script() {
-  restore_file=${2##*/}
-  restore_script=${2%.*}_restore.sh
+  restore_file=${1##*/}
+  restore_script=${1%.*}_restore.sh
 
   echo "create restore script ... $restore_script"
 
@@ -91,7 +91,7 @@ if [ "$action" = "backup" ]; then
 
   echo "valumes = $volumes"
   echo "file = $tgz"
-  create_restore_script $volumes $tgz
+  create_restore_script $tgz
 
   #tar acf $tgz $volumes #busyboxのtarは --auto-compress が使えない
   tar czf $tgz $volumes
